@@ -15,7 +15,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import {
   clearSnippets,
@@ -51,6 +59,7 @@ export default function HomePage() {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [filter, setFilter] = useState("");
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [showTerms, setShowTerms] = useState(false);
 
   // load history dari IndexedDB
   useEffect(() => {
@@ -58,6 +67,14 @@ export default function HomePage() {
       const data = await loadSnippets();
       setSnippets(data);
     })();
+  }, []);
+
+  // Check for first visit
+  useEffect(() => {
+    const hasAcceptedTerms = localStorage.getItem("saybetter-terms-accepted");
+    if (!hasAcceptedTerms) {
+      setShowTerms(true);
+    }
   }, []);
 
   function parseReply(reply: string): ParsedResult {
@@ -172,6 +189,11 @@ export default function HomePage() {
     } catch (err) {
       console.error("Failed to copy:", err);
     }
+  }
+
+  function handleAcceptTerms() {
+    localStorage.setItem("saybetter-terms-accepted", "true");
+    setShowTerms(false);
   }
 
   const filteredSnippets = snippets.filter((s) =>
@@ -299,6 +321,7 @@ export default function HomePage() {
 
             <div className="flex items-center justify-between gap-3">
               <Button onClick={handleImprove} disabled={loading} className="border-2 border-slate-300 hover:border-slate-400 cursor-pointer">
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {loading ? "Processing..." : "Improve"}
               </Button>
               <Button
@@ -356,7 +379,10 @@ export default function HomePage() {
                 </CardHeader>
                 <CardContent>
                   {loading && !result.corrected ? (
-                    <p className="text-xs text-slate-400">Working on it...</p>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <span>Processing your text...</span>
+                    </div>
                   ) : result.corrected ? (
                     <p className="text-sm text-slate-800 whitespace-pre-wrap">
                       {result.corrected}
@@ -465,6 +491,90 @@ export default function HomePage() {
           </section>
         </div>
       </main>
+
+      {/* Terms of Service Modal */}
+      <Dialog open={showTerms} onOpenChange={() => { }}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="text-xl">Welcome to SayBetter</DialogTitle>
+            <DialogDescription className="text-base">
+              Please read and accept our terms of service to continue.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 text-sm text-slate-700">
+            <section>
+              <h3 className="font-semibold text-base mb-2">1. Service Overview</h3>
+              <p>
+                SayBetter is an AI-powered English writing assistant that helps improve your sentences by detecting mixed Indonesian and English text, fixing grammar, and providing multiple writing style variations.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold text-base mb-2">2. Data Privacy</h3>
+              <p className="mb-2">
+                <strong>Your Privacy Matters:</strong>
+              </p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>All your data is stored <strong>locally</strong> in your browser using IndexedDB</li>
+                <li>Your text inputs and results are <strong>never saved</strong> to any server or database</li>
+                <li>We only send your text to Google Gemini API for AI processing</li>
+                <li>No personal information, account data, or usage statistics are collected</li>
+                <li>You can clear all your local data at any time using the "Clear History" button</li>
+              </ul>
+            </section>
+
+            <section>
+              <h3 className="font-semibold text-base mb-2">3. Third-Party Services</h3>
+              <p className="mb-2">
+                This application uses the Google Gemini API to process your text. By using SayBetter, you acknowledge that:
+              </p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Your input text is sent to Google's servers for AI processing</li>
+                <li>Google's terms of service and privacy policy apply to this data processing</li>
+                <li>We recommend not entering sensitive, confidential, or personal information</li>
+              </ul>
+            </section>
+
+            <section>
+              <h3 className="font-semibold text-base mb-2">4. Acceptable Use</h3>
+              <p className="mb-2">You agree to:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Use SayBetter only for lawful purposes</li>
+                <li>Not use the service for generating harmful, abusive, or illegal content</li>
+                <li>Not attempt to reverse engineer or exploit the application</li>
+                <li>Respect intellectual property rights</li>
+              </ul>
+            </section>
+
+            <section>
+              <h3 className="font-semibold text-base mb-2">5. Disclaimer</h3>
+              <p>
+                SayBetter is provided "as is" without warranties of any kind. While we strive for accuracy, AI-generated suggestions may contain errors. You are responsible for reviewing and verifying all outputs before use.
+              </p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold text-base mb-2">6. Changes to Terms</h3>
+              <p>
+                We may update these terms at any time. Continued use of the application constitutes acceptance of any changes.
+              </p>
+            </section>
+
+            <section className="bg-slate-50 p-3 rounded-md border border-slate-200">
+              <p className="text-xs text-slate-600">
+                <strong>Last Updated:</strong> November 27, 2024
+              </p>
+            </section>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={handleAcceptTerms} className="w-full sm:w-auto cursor-pointer">
+              I Accept - Continue to SayBetter
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
