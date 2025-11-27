@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Copy, Check } from "lucide-react";
 
 import {
   clearSnippets,
@@ -29,12 +30,14 @@ interface ParsedResult {
   corrected: string;
   professional: string;
   casual: string;
+  genz: string;
 }
 
 const EMPTY_RESULT: ParsedResult = {
   corrected: "",
   professional: "",
   casual: "",
+  genz: "",
 };
 
 const HINT_EXAMPLE =
@@ -47,6 +50,7 @@ export default function HomePage() {
   const [result, setResult] = useState<ParsedResult>(EMPTY_RESULT);
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [filter, setFilter] = useState("");
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   // load history dari IndexedDB
   useEffect(() => {
@@ -62,6 +66,7 @@ export default function HomePage() {
       corrected: "",
       professional: "",
       casual: "",
+      genz: "",
     };
 
     const lines = reply.split("\n");
@@ -83,6 +88,11 @@ export default function HomePage() {
       if (/^casual:/i.test(line)) {
         current = "casual";
         sections.casual = line.replace(/^casual:\s*/i, "").trim();
+        continue;
+      }
+      if (/^gen-?z:/i.test(line)) {
+        current = "genz";
+        sections.genz = line.replace(/^gen-?z:\s*/i, "").trim();
         continue;
       }
 
@@ -119,12 +129,13 @@ export default function HomePage() {
       console.log("Parsed Result:", parsed);
       setResult(parsed);
 
-      if (parsed.corrected || parsed.professional || parsed.casual) {
+      if (parsed.corrected || parsed.professional || parsed.casual || parsed.genz) {
         const snippet: Omit<Snippet, "id"> = {
           input: input.trim(),
           corrected: parsed.corrected,
           professional: parsed.professional,
           casual: parsed.casual,
+          genz: parsed.genz,
           createdAt: Date.now(),
         };
         await saveSnippet(snippet);
@@ -149,7 +160,18 @@ export default function HomePage() {
       corrected: s.corrected,
       professional: s.professional,
       casual: s.casual,
+      genz: s.genz || "",
     });
+  }
+
+  async function handleCopy(text: string, field: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
   }
 
   const filteredSnippets = snippets.filter((s) =>
@@ -246,7 +268,7 @@ export default function HomePage() {
               <SelectTrigger className="w-[170px] h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="w-[250px]">
+              <SelectContent className="w-[250px] bg-white">
                 <SelectItem value="gemini-flash-latest">
                   gemini-flash-latest
                 </SelectItem>
@@ -276,7 +298,7 @@ export default function HomePage() {
             </div>
 
             <div className="flex items-center justify-between gap-3">
-              <Button onClick={handleImprove} disabled={loading}>
+              <Button onClick={handleImprove} disabled={loading} className="border-2 border-slate-300 hover:border-slate-400 cursor-pointer">
                 {loading ? "Processing..." : "Improve"}
               </Button>
               <Button
@@ -287,6 +309,7 @@ export default function HomePage() {
                   setInput("");
                   setResult(EMPTY_RESULT);
                 }}
+                className="border border-slate-300 hover:border-slate-400 cursor-pointer"
               >
                 Clear input
               </Button>
@@ -314,8 +337,22 @@ export default function HomePage() {
           <section className="w-full lg:w-1/2 flex flex-col gap-3">
             <div className="grid grid-cols-1 gap-3">
               <Card>
-                <CardHeader className="py-3">
+                <CardHeader className="py-3 flex flex-row items-center justify-between">
                   <CardTitle className="text-sm">Corrected</CardTitle>
+                  {result.corrected && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 cursor-pointer"
+                      onClick={() => handleCopy(result.corrected, "corrected")}
+                    >
+                      {copiedField === "corrected" ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent>
                   {loading && !result.corrected ? (
@@ -333,8 +370,22 @@ export default function HomePage() {
               </Card>
 
               <Card>
-                <CardHeader className="py-3">
+                <CardHeader className="py-3 flex flex-row items-center justify-between">
                   <CardTitle className="text-sm">Professional</CardTitle>
+                  {result.professional && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 cursor-pointer"
+                      onClick={() => handleCopy(result.professional, "professional")}
+                    >
+                      {copiedField === "professional" ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent>
                   {result.professional ? (
@@ -350,8 +401,22 @@ export default function HomePage() {
               </Card>
 
               <Card>
-                <CardHeader className="py-3">
+                <CardHeader className="py-3 flex flex-row items-center justify-between">
                   <CardTitle className="text-sm">Casual</CardTitle>
+                  {result.casual && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 cursor-pointer"
+                      onClick={() => handleCopy(result.casual, "casual")}
+                    >
+                      {copiedField === "casual" ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent>
                   {result.casual ? (
@@ -361,6 +426,37 @@ export default function HomePage() {
                   ) : (
                     <p className="text-xs text-slate-400">
                       Versi lebih santai untuk teman / chat sehari-hari.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="py-3 flex flex-row items-center justify-between">
+                  <CardTitle className="text-sm">Gen-Z 😎</CardTitle>
+                  {result.genz && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 cursor-pointer"
+                      onClick={() => handleCopy(result.genz, "genz")}
+                    >
+                      {copiedField === "genz" ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  {result.genz ? (
+                    <p className="text-sm text-slate-800 whitespace-pre-wrap">
+                      {result.genz}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-slate-400">
+                      Versi Gen-Z dengan slang dan emoji trendy.
                     </p>
                   )}
                 </CardContent>

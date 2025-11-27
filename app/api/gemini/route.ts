@@ -34,6 +34,9 @@ Professional:
 
 Casual:
 <slightly relaxed, conversational version>
+
+Gen-Z:
+<trendy Gen-Z slang with emojis, abbreviations like "fr", "ngl", "lowkey", "vibes", etc.>
     
 User input:
 ${message}
@@ -73,7 +76,7 @@ ${message}
             }
 
             return NextResponse.json({
-                reply: `❌ Gemini API Error (${errorCode}): ${apiKey}`
+                reply: `❌ Gemini API Error (${errorCode}): ${errorMessage}`
             });
         }
 
