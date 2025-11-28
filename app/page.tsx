@@ -659,7 +659,7 @@ export default function HomePage() {
 
             <section className="bg-slate-50 p-3 rounded-md border border-slate-200">
               <p className="text-xs text-slate-600">
-                <strong>Last Updated:</strong> November 27, 2024
+                <strong>Last Updated:</strong> November 27, 2025
               </p>
             </section>
           </div>
