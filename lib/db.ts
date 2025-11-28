@@ -12,6 +12,7 @@ export interface Snippet {
     professional: string;
     casual: string;
     genz?: string;
+    tone?: string;
     createdAt: number;
 }
 

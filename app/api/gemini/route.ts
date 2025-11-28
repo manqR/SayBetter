@@ -8,6 +8,7 @@ export async function POST(req: Request) {
         const body = await req.json();
         const message: string = body.message ?? '';
         const model: string = body.model || DEFAULT_MODEL;
+        const tone: string = body.tone || 'Normal';
 
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
@@ -17,6 +18,20 @@ export async function POST(req: Request) {
             );
         }
 
+        // Tone descriptions for AI guidance
+        const toneGuide: Record<string, string> = {
+            'Normal': 'Neutral, clear, no specific emotional coloring',
+            'Casual': 'Relaxed, friendly, approachable',
+            'Warm': 'Kind, empathetic, caring, supportive',
+            'Dramatic': 'Emphatic, impactful, attention-grabbing, expressive',
+            'Confident': 'Assured, decisive, authoritative, self-assured',
+            'Thoughtful': 'Reflective, considerate, measured, contemplative',
+            'Subtle': 'Understated, gentle, nuanced, delicate',
+            'Sarcasm': 'Ironic, witty, tongue-in-cheek, playfully mocking'
+        };
+
+        const toneDescription = toneGuide[tone] || toneGuide['Normal'];
+
         const prompt = `
 You are an English Technical Writer AI.
 
@@ -24,19 +39,22 @@ Tasks:
 1. Detect mixed Indonesian + English sentences.
 2. Translate Indonesian parts to natural English.
 3. Fix all grammar issues and make the sentence clear and natural.
-4. Return exactly this structure:
+4. Apply the following emotional tone to ALL variations: **${tone}** (${toneDescription})
+5. Return exactly this structure:
 
 Corrected:
-<corrected, natural, clear sentence>
+<corrected, natural, clear sentence with ${tone} tone>
 
 Professional:
-<more formal / business version>
+<more formal / business version with ${tone} tone>
 
 Casual:
-<slightly relaxed, conversational version>
+<slightly relaxed, conversational version with ${tone} tone>
 
 Gen-Z:
-<trendy Gen-Z slang with emojis, abbreviations like "fr", "ngl", "lowkey", "vibes", etc.>
+<trendy Gen-Z slang with emojis, abbreviations like "fr", "ngl", "lowkey", "vibes", etc. with ${tone} tone>
+
+IMPORTANT: Ensure the ${tone} emotional tone is consistently applied across all four variations while maintaining their respective style differences (corrected/professional/casual/gen-z).
     
 User input:
 ${message}

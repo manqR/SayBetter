@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Copy, Check, Loader2 } from "lucide-react";
+import { Copy, Check, Loader2, Sparkles, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -60,6 +60,20 @@ export default function HomePage() {
   const [filter, setFilter] = useState("");
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [showTerms, setShowTerms] = useState(false);
+  const [selectedTone, setSelectedTone] = useState("Normal");
+  const [showToneSpotlight, setShowToneSpotlight] = useState(false);
+
+  // Tone options
+  const toneOptions = [
+    "Normal",
+    "Casual",
+    "Warm",
+    "Dramatic",
+    "Confident",
+    "Thoughtful",
+    "Subtle",
+    "Sarcasm",
+  ];
 
   // load history dari IndexedDB
   useEffect(() => {
@@ -76,6 +90,25 @@ export default function HomePage() {
       setShowTerms(true);
     }
   }, []);
+
+  // Check if user has seen the tone feature spotlight
+  useEffect(() => {
+    const hasSeenToneSpotlight = localStorage.getItem("saybetter-tone-spotlight-seen");
+    // Only show spotlight after terms are accepted
+    const hasAcceptedTerms = localStorage.getItem("saybetter-terms-accepted");
+    if (hasAcceptedTerms && !hasSeenToneSpotlight) {
+      // Delay spotlight to avoid overwhelming user on first load
+      const timer = setTimeout(() => {
+        setShowToneSpotlight(true);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  function handleDismissSpotlight() {
+    localStorage.setItem("saybetter-tone-spotlight-seen", "true");
+    setShowToneSpotlight(false);
+  }
 
   function parseReply(reply: string): ParsedResult {
     // simple parsing berdasarkan prefix
@@ -133,6 +166,7 @@ export default function HomePage() {
         body: JSON.stringify({
           message: input.trim(),
           model,
+          tone: selectedTone,
         }),
       });
 
@@ -153,6 +187,7 @@ export default function HomePage() {
           professional: parsed.professional,
           casual: parsed.casual,
           genz: parsed.genz,
+          tone: selectedTone,
           createdAt: Date.now(),
         };
         await saveSnippet(snippet);
@@ -179,6 +214,8 @@ export default function HomePage() {
       casual: s.casual,
       genz: s.genz || "",
     });
+    // Restore the tone, default to Normal if not saved
+    setSelectedTone(s.tone || "Normal");
   }
 
   async function handleCopy(text: string, field: string) {
@@ -317,6 +354,65 @@ export default function HomePage() {
                 Kamu bisa tulis kalimat email, chat ke atasan, pesan customer,
                 dsb. SayBetter hanya membantu bahasa, bukan isi pesan.
               </p>
+            </div>
+
+            {/* Emotional Tone Selector */}
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-slate-700">
+                Emotional Tone
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {toneOptions.map((tone) => (
+                  <button
+                    key={tone}
+                    type="button"
+                    onClick={() => setSelectedTone(tone)}
+                    className={`
+                      px-3 py-1.5 text-xs font-medium rounded-full transition-all
+                      ${selectedTone === tone
+                        ? "bg-slate-900 text-white shadow-sm"
+                        : "bg-white text-slate-700 border border-slate-300 hover:border-slate-400 hover:shadow-sm"
+                      }
+                    `}
+                  >
+                    {tone}
+                  </button>
+                ))}
+              </div>
+
+              {/* Spotlight Feature Introduction */}
+              {showToneSpotlight && (
+                <div className="relative animate-in fade-in slide-in-from-top-2 duration-500">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-4 shadow-sm">
+                    <button
+                      onClick={handleDismissSpotlight}
+                      className="absolute top-2 right-2 text-slate-400 hover:text-slate-600 transition-colors"
+                      aria-label="Dismiss"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                    <div className="flex items-start gap-3">
+                      <div className="bg-blue-500 rounded-full p-2 mt-0.5">
+                        <Sparkles className="h-4 w-4 text-white" />
+                      </div>
+                      <div className="flex-1 pr-6">
+                        <h3 className="text-sm font-semibold text-slate-900 mb-1">
+                          ✨ New Feature: Emotional Tone
+                        </h3>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          Choose an emotional tone to influence your AI results! Select from tones like <strong>Warm</strong>, <strong>Confident</strong>, or <strong>Sarcasm</strong> to get outputs that match your desired style.
+                        </p>
+                        <button
+                          onClick={handleDismissSpotlight}
+                          className="mt-3 text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                        >
+                          Got it, thanks!
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between gap-3">
