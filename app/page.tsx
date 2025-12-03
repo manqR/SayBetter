@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Copy, Check, Loader2, Sparkles, X } from "lucide-react";
+import { Copy, Check, Loader2, Sparkles, X, MessageCircle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -62,6 +62,7 @@ export default function HomePage() {
   const [showTerms, setShowTerms] = useState(false);
   const [selectedTone, setSelectedTone] = useState("Normal");
   const [showToneSpotlight, setShowToneSpotlight] = useState(false);
+  const [showContact, setShowContact] = useState(false);
 
   // Tone options
   const toneOptions = [
@@ -146,8 +147,10 @@ export default function HomePage() {
         continue;
       }
 
-      if (current && line) {
-        sections[current] += (sections[current] ? " " : "") + line;
+      if (current && raw) {
+        // Use raw.trimEnd() to preserve leading whitespace (indentation)
+        // Join with newline instead of space to preserve structure
+        sections[current] += (sections[current] ? "\n" : "") + raw.trimEnd();
       }
     }
 
@@ -671,6 +674,120 @@ export default function HomePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ContactDialog open={showContact} onOpenChange={setShowContact} />
+
+      {/* Floating Contact Button */}
+      <Button
+        className="fixed bottom-6 right-6 h-12 w-12 rounded-full shadow-lg bg-slate-900 hover:bg-slate-800 text-white flex items-center justify-center transition-transform hover:scale-105"
+        onClick={() => setShowContact(true)}
+        aria-label="Contact Support"
+      >
+        <MessageCircle className="h-6 w-6" />
+      </Button>
     </div>
+  );
+}
+
+function ContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess(false);
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, message }),
+      });
+
+      if (!res.ok) throw new Error("Failed to send message");
+
+      setSuccess(true);
+      setTimeout(() => {
+        onOpenChange(false);
+        setSuccess(false);
+        setName("");
+        setEmail("");
+        setMessage("");
+      }, 2000);
+    } catch (err) {
+      setError("Failed to send message. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Contact Support</DialogTitle>
+          <DialogDescription>
+            Send a message to the SayBetter team. We'll get back to you via email.
+          </DialogDescription>
+        </DialogHeader>
+
+        {success ? (
+          <div className="flex flex-col items-center justify-center py-6 text-center space-y-2">
+            <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+              <Check className="h-6 w-6 text-green-600" />
+            </div>
+            <p className="text-sm font-medium text-green-600">Message sent successfully!</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label htmlFor="name" className="text-xs font-medium">Name</label>
+              <Input
+                id="name"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="email" className="text-xs font-medium">Email</label>
+              <Input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="message" className="text-xs font-medium">Message</label>
+              <Textarea
+                id="message"
+                required
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="How can we help?"
+                rows={4}
+              />
+            </div>
+            {error && <p className="text-xs text-red-500">{error}</p>}
+            <DialogFooter>
+              <Button type="submit" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Send Message
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

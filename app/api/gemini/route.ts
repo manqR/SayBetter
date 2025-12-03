@@ -40,7 +40,9 @@ Tasks:
 2. Translate Indonesian parts to natural English.
 3. Fix all grammar issues and make the sentence clear and natural.
 4. Apply the following emotional tone to ALL variations: **${tone}** (${toneDescription})
-5. Return exactly this structure:
+5. IMPORTANT: Treat the entire user input as a SINGLE block of text, even if it contains multiple lines or bullet points. Do NOT rewrite each line individually unless the input is clearly a list of unrelated sentences.
+6. Maintain the original formatting (bullet points, numbering) in the output.
+7. Return exactly this structure:
 
 Corrected:
 <corrected, natural, clear sentence with ${tone} tone>
